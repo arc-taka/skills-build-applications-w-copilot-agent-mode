@@ -40,6 +40,14 @@ describe('OctoFit API contract', () => {
       expect(response.status).toBeGreaterThanOrEqual(400);
       expect(response.status).toBeLessThan(500);
     }
+    for (const invalid of [
+      { type: 'flying', minutes: 30 },
+      { type: 'run', minutes: 0 },
+      { type: 'run', minutes: 30, occurredAt: 'not-a-date' },
+    ]) {
+      const response = await request(app).post('/api/activities').send({ userId: user._id.toString(), teamId: team._id.toString(), ...invalid });
+      expect(response.status).toBe(400);
+    }
     expect(await Activity.countDocuments()).toBe(0);
     const created = await request(app).post('/api/activities').send({ userId: user._id.toString(), teamId: team._id.toString(), type: 'run', minutes: 30 });
     expect(created.status).toBe(201);
@@ -55,6 +63,8 @@ describe('OctoFit API contract', () => {
     const member = await User.create({ name: 'Mona', email: 'mona@example.com', fitnessGoal: 'endurance' });
     const invalid = await request(app).post('/api/teams').send({ mascot: 'Mona' });
     expect(invalid.status).toBe(400);
+    expect((await request(app).post('/api/teams').send({ name: 'Invalid', mascot: 'Mona', members: ['not-an-id'] })).status).toBe(400);
+    expect((await request(app).post('/api/teams').send({ name: 'Missing member', mascot: 'Mona', members: [new mongoose.Types.ObjectId().toString()] })).status).toBe(404);
     const created = await request(app).post('/api/teams').send({ name: 'Octocats', mascot: 'Mona', members: [member._id.toString()] });
     expect(created.status).toBe(201);
     expect(created.body.team).toMatchObject({ name: 'Octocats', mascot: 'Mona' });
@@ -62,6 +72,7 @@ describe('OctoFit API contract', () => {
     expect(listed.body.teams).toHaveLength(1);
     expect(listed.body.teams[0]).toMatchObject({ name: 'Octocats', mascot: 'Mona' });
     expect(listed.body.teams[0].members.map((id: string) => id.toString())).toContain(member._id.toString());
+    expect((await User.findById(member._id))?.team?.toString()).toBe(created.body.team._id);
   });
   it('orders leaderboard entries by total points', async () => {
     const mona = await createUserAndTeam('Mona', 'mona@example.com', 'Mona', 'Octocats');
