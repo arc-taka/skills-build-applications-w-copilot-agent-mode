@@ -28,22 +28,32 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 ## Implementation decisions
 
-Record your plan here before editing code.
+- **Presentation tier**: Keep React pages and shared API-client code in `octofit-tracker/frontend/src`. The browser calls relative `/api` paths through Vite; the frontend owns rendering and accessible loading, empty, and error states, not persistence or business rules.
+- **Logic tier**: Keep request validation, business rules, and response shaping in Express routes/services under `octofit-tracker/backend/src`. Return deliberate 4xx responses for invalid or unknown references instead of exposing database cast errors.
+- **Data tier**: Keep persistence constraints in Mongoose models under `octofit-tracker/backend/src/models` and representative, repeatable fixture creation in `src/scripts/seed.ts`. MongoDB remains on port `27017`.
+- **Activity tracking**: Validate the submitted user and team IDs and confirm both records exist before creating an activity. Store the user, team, type, and minutes with computed points and an occurrence date.
+- **Team management**: Require a team name, preserve the submitted name and mascot, and keep member references as IDs.
+- **Leaderboard**: Aggregate activity points by team, sort highest first, and assign 1-based ranks in the API response.
+- **Workout suggestions**: Match the requested email to a user, use that user's goal and recent activities to rank relevant workouts, and include an explanatory reason. Return a deliberate 4xx when no user matches.
+- **Authentication**: Out of scope for this exercise; leave it as a follow-up challenge.
 
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+### Safe implementation order
+
+Make each step a small test-driven change: implement one model rule, endpoint behavior, or page state at a time; run its focused contract test, then its tier suite before moving on.
+
+1. Complete the data-model contracts one model at a time: user, team, activity, then workout. These schemas are prerequisites for reliable API input and persistence.
+2. Verify the seed contract after the schemas are in place. Keep seeding idempotent and preserve unrelated existing records.
+3. Implement API slices: teams first, then activity creation/listing (which depends on users and teams), then the leaderboard (which depends on stored activity points), then workout suggestions (which depend on users, activities, and workouts).
+4. After the corresponding API behavior is established, implement the frontend one route and one state at a time: loading, empty, API error, and populated data. Keep API calls in the shared client and presentation in the React tier.
+5. Run both tier builds and all three contract suites after the feature slices are complete. Keep the configured MongoDB, API, and Vite ports unchanged.
 
 ## Test plan
 
-Record the commands you run and what each failure means.
+Latest validation: 2026-11-06. Initial failures were addressed by adding schema validation, implementing the API service behavior, and wiring the frontend routes to display API loading, empty, error, and success states.
 
-- Data-tier command: `npm run test:data --prefix octofit-tracker/backend`
-- API command: `npm run test:api --prefix octofit-tracker/backend`
-- Frontend command: `npm test --prefix octofit-tracker/frontend`
-- Backend build command: `npm run build --prefix octofit-tracker/backend`
-- Frontend build command: `npm run build --prefix octofit-tracker/frontend`
+- **Data tier** — `npm run test:data --prefix octofit-tracker/backend`: passed (5 tests), including repeatable seeding without deleting unrelated records.
+- **API** — `npm run test:api --prefix octofit-tracker/backend`: passed (4 tests), covering activity validation and creation, teams, leaderboard ranking, and personalized workout suggestions.
+- **Backend suite** — `npm test --prefix octofit-tracker/backend`: passed (9 tests across 2 files).
+- **Frontend** — `npm test --prefix octofit-tracker/frontend`: passed (15 tests), covering populated data and loading, empty, and error states on all four routes.
+- **Backend build** — `npm run build --prefix octofit-tracker/backend`: passed.
+- **Frontend build** — `npm run build --prefix octofit-tracker/frontend`: passed, including TypeScript checking and Vite production bundling.
