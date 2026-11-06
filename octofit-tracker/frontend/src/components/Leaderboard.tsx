@@ -1,4 +1,13 @@
-import { CapabilityCard } from './CapabilityCard.js';
+import { ApiStatus, useApiData } from './useApiData.js';
+
+type Ranking = { teamName: string; totalPoints: number; rank: number };
+type LeaderboardResponse = { leaderboard: Ranking[] };
+
 export default function Leaderboard() {
-  return <CapabilityCard title="Leaderboard" description="Compare team point totals." />;
+  const state = useApiData<LeaderboardResponse>('/api/leaderboard');
+  return <section><h2>Leaderboard</h2><p>Compare team point totals.</p><ApiStatus state={state} label="leaderboard" />
+    {state.status === 'success' && (state.data.leaderboard.length
+      ? <ol>{state.data.leaderboard.map((entry) => <li key={entry.rank}>{entry.teamName}: {entry.totalPoints} points</li>)}</ol>
+      : <p>No leaderboard rankings yet.</p>)}
+  </section>;
 }

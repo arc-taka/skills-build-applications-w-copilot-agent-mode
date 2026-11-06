@@ -49,12 +49,11 @@ Make each step a small test-driven change: implement one model rule, endpoint be
 
 ## Test plan
 
-Latest contract-test run: 2026-11-06. These failures describe the current implementation gaps; they are not passing baselines.
+Latest validation: 2026-11-06. Initial failures were addressed by adding schema validation, implementing the API service behavior, and wiring the frontend routes to display API loading, empty, error, and success states.
 
-- **Data tier** — `npm run test:data --prefix octofit-tracker/backend`: 4 failed, 1 passed. Required-field validation is missing for user identity/goals, team name/mascot, activity fields, and workout focus/duration/difficulty. The seed/idempotency test passed on the latest run.
-- **API** — `npm run test:api --prefix octofit-tracker/backend`: 4 failed. Invalid activity and team requests return `501` instead of a deliberate `4xx`; the leaderboard returns no ranked entries; workout suggestions select a strength workout for the endurance-focused running user rather than the matching interval workout.
-- **Frontend** — `npm test --prefix octofit-tracker/frontend`: 15 failed. The three populated-data/integration tests fail, and each of the four routes (`/activities`, `/teams`, `/leaderboard`, `/workouts`) fails its loading, empty-state, and API-error-state contracts.
-- **Backend build** — `npm run build --prefix octofit-tracker/backend`: not run in this snapshot. Run to check backend TypeScript compilation after implementation.
-- **Frontend build** — `npm run build --prefix octofit-tracker/frontend`: not run in this snapshot. Run to check frontend TypeScript compilation and production bundling after implementation.
-
-The seed test initially hit a MongoMemoryServer startup timeout but passed on the immediate rerun; treat that first result as an environment/startup flake, not a confirmed seed-contract failure.
+- **Data tier** — `npm run test:data --prefix octofit-tracker/backend`: passed (5 tests), including repeatable seeding without deleting unrelated records.
+- **API** — `npm run test:api --prefix octofit-tracker/backend`: passed (4 tests), covering activity validation and creation, teams, leaderboard ranking, and personalized workout suggestions.
+- **Backend suite** — `npm test --prefix octofit-tracker/backend`: passed (9 tests across 2 files).
+- **Frontend** — `npm test --prefix octofit-tracker/frontend`: passed (15 tests), covering populated data and loading, empty, and error states on all four routes.
+- **Backend build** — `npm run build --prefix octofit-tracker/backend`: passed.
+- **Frontend build** — `npm run build --prefix octofit-tracker/frontend`: passed, including TypeScript checking and Vite production bundling.
